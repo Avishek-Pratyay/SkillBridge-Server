@@ -21,6 +21,6 @@ export const db = client.db("skillBridgeDB");
 
 export const userCollection = db.collection("users");
 
-export const coursesCollection = db.collection("courses");
+export const courseCollection = db.collection("courses");
 
-export const reviewsCollection = db.collection("reviews");
+export const reviewCollection = db.collection("reviews");
