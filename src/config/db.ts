@@ -6,10 +6,10 @@ dotenv.config();
 const uri = process.env.MONGODB_URI;
 
 if (!uri) {
-  throw new Error("MONGODB_URI is missing in .env");
+  throw new Error("MONGODB_URI is missing");
 }
 
-const client = new MongoClient(uri, {
+export const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
@@ -17,4 +17,10 @@ const client = new MongoClient(uri, {
   },
 });
 
-export default client;
+export const db = client.db("skillBridgeDB");
+
+export const userCollection = db.collection("users");
+
+export const coursesCollection = db.collection("courses");
+
+export const reviewsCollection = db.collection("reviews");

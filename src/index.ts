@@ -1,8 +1,7 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import client from "./config/db";
-import authRoutes from "./routes/auth.routes";
+import { client } from "./config/db";import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
 import userRoutes from "./routes/user.routes";
 
