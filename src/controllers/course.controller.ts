@@ -127,11 +127,21 @@ _id: new ObjectId(req.params.id as string),
 };
 export const updateCourse = async (req: Request, res: Response) => {
   try {
-    const id = req.params.id;
-    const updatedData = req.body;
+    const { id } = req.params;
+
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid Course ID",
+      });
+    }
+
+    const updatedData = { ...req.body };
+
+    delete updatedData._id; // MongoDB _id cannot be updated
 
     const result = await courseCollection.updateOne(
-      { _id: new ObjectId(req.params.id as string), },
+      { _id: new ObjectId(id) },
       {
         $set: updatedData,
       }
@@ -142,7 +152,7 @@ export const updateCourse = async (req: Request, res: Response) => {
       modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    console.log(error);
+    console.error("Update Error:", error);
 
     res.status(500).json({
       success: false,

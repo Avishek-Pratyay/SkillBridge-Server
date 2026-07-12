@@ -17,6 +17,7 @@ router.get("/my-courses", verifyJWT, getMyCourses);
 
 router.get("/:id", getCourseById);
 
+
 router.post("/", verifyJWT, addCourse);
 
 router.delete("/:id", verifyJWT, deleteCourse);
