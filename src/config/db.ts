@@ -24,3 +24,9 @@ export const userCollection = db.collection("users");
 export const courseCollection = db.collection("courses");
 
 export const reviewCollection = db.collection("reviews");
+
+/* NEW */
+export const enrollmentCollection = db.collection("enrollments");
+export const paymentCollection =
+  db.collection("payments");
+

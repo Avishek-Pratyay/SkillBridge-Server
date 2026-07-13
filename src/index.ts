@@ -4,7 +4,8 @@ import dotenv from "dotenv";
 import { client } from "./config/db";import authRoutes from "./routes/auth.routes";
 import courseRoutes from "./routes/course.routes";
 import userRoutes from "./routes/user.routes";
-
+import enrollmentRoutes from "./routes/enrollment.routes";
+import paymentRoutes from "./routes/payment.routes";
 dotenv.config();
 
 const app = express();
@@ -15,6 +16,8 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/enrollments", enrollmentRoutes);
+app.use("/api/payments", paymentRoutes);
 
 async function run() {
   try {

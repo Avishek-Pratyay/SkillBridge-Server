@@ -1,10 +1,20 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { userCollection } from "../config/db";
 import jwt from "jsonwebtoken";
-export const registerUser = async (req: Request, res: Response) => {
+import { userCollection } from "../config/db";
+
+export const registerUser = async (
+  req: Request,
+  res: Response
+) => {
   try {
-    const { name, email, password, photoURL } = req.body;
+    const {
+      name,
+      email,
+      password,
+      photoURL,
+      role,
+    } = req.body;
 
     if (!name || !email || !password) {
       return res.status(400).json({
@@ -13,7 +23,9 @@ export const registerUser = async (req: Request, res: Response) => {
       });
     }
 
-    const existingUser = await userCollection.findOne({ email });
+    const existingUser = await userCollection.findOne({
+      email,
+    });
 
     if (existingUser) {
       return res.status(409).json({
@@ -22,25 +34,37 @@ export const registerUser = async (req: Request, res: Response) => {
       });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(
+      password,
+      10
+    );
 
     const user = {
       name,
       email,
       password: hashedPassword,
       photoURL: photoURL || "",
-      role: "user",
+
+      // New
+      role:
+        role === "instructor"
+          ? "instructor"
+          : "student",
+
+      // Instructor must subscribe later
+      subscription: false,
+
       createdAt: new Date(),
     };
 
-    const result = await userCollection.insertOne(user);
+    const result =
+      await userCollection.insertOne(user);
 
     res.status(201).json({
       success: true,
       message: "Registration Successful",
       insertedId: result.insertedId,
     });
-
   } catch (error) {
     console.log(error);
 
@@ -50,11 +74,17 @@ export const registerUser = async (req: Request, res: Response) => {
     });
   }
 };
-export const loginUser = async (req: Request, res: Response) => {
+
+export const loginUser = async (
+  req: Request,
+  res: Response
+) => {
   try {
     const { email, password } = req.body;
 
-    const user = await userCollection.findOne({ email });
+    const user = await userCollection.findOne({
+      email,
+    });
 
     if (!user) {
       return res.status(404).json({
@@ -63,7 +93,11 @@ export const loginUser = async (req: Request, res: Response) => {
       });
     }
 
-    const isPasswordMatched = await bcrypt.compare(password, user.password);
+    const isPasswordMatched =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
 
     if (!isPasswordMatched) {
       return res.status(401).json({
@@ -86,12 +120,16 @@ export const loginUser = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       message: "Login Successful",
+
       token,
+
       user: {
         name: user.name,
         email: user.email,
         role: user.role,
         photoURL: user.photoURL,
+        subscription:
+          user.subscription ?? false,
       },
     });
   } catch (error) {
