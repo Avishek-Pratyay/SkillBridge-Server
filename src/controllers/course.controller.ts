@@ -108,51 +108,66 @@ export const addCourse = async (req: any, res: Response) => {
   }
 };
 
-export const deleteCourse = async (req: Request, res: Response) => {
+export const deleteCourse = async (req: any, res: Response) => {
   try {
     const result = await courseCollection.deleteOne({
-_id: new ObjectId(req.params.id as string),
-});
+      _id: new ObjectId(req.params.id),
+      createdBy: req.user.email,
+    });
+
+    if (result.deletedCount === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to delete this course.",
+      });
+    }
 
     res.json({
       success: true,
       deletedCount: result.deletedCount,
     });
-  } catch {
+  } catch (error) {
+    console.log(error);
+
     res.status(500).json({
       success: false,
       message: "Delete failed",
     });
   }
 };
-export const updateCourse = async (req: Request, res: Response) => {
+export const updateCourse = async (req: any, res: Response) => {
   try {
-    const { id } = req.params;
-
-    if (!ObjectId.isValid(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid Course ID",
-      });
-    }
-
     const updatedData = { ...req.body };
 
-    delete updatedData._id; // MongoDB _id cannot be updated
+    // Never allow these fields to be updated
+    delete updatedData._id;
+    delete updatedData.createdBy;
+    delete updatedData.createdAt;
 
     const result = await courseCollection.updateOne(
-      { _id: new ObjectId(id) },
+      {
+        _id: new ObjectId(req.params.id),
+        createdBy: req.user.email,
+      },
       {
         $set: updatedData,
       }
     );
+    
+
+    if (result.matchedCount === 0) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this course.",
+      });
+    }
 
     res.json({
       success: true,
       modifiedCount: result.modifiedCount,
     });
   } catch (error) {
-    console.error("Update Error:", error);
+    console.log("UPDATE ERROR:", error);
 
     res.status(500).json({
       success: false,
