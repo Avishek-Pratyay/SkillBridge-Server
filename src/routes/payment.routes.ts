@@ -3,12 +3,12 @@ import { Router } from "express";
 import verifyJWT from "../middlewares/verifyJWT";
 
 import {
-createPaymentIntent,
-confirmEnrollment,
-getMyEnrollments,
-getMyPayments
-}
-from "../controllers/payment.controller";
+  createPaymentIntent,
+  confirmEnrollment,
+  getMyEnrollments,
+  getMyPayments,
+  checkEnrollment,
+} from "../controllers/payment.controller";
 
 const router = Router();
 
@@ -29,7 +29,11 @@ verifyJWT,
 getMyEnrollments
 );
 
-
+router.get(
+  "/check-enrollment/:courseId",
+  verifyJWT,
+  checkEnrollment
+);
 router.get(
 "/my-payments",
 verifyJWT,

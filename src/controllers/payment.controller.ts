@@ -64,11 +64,11 @@ export const confirmEnrollment = async (
 
     const email = req.user.email;
 
-    const already =
-      await enrollmentCollection.findOne({
-        courseId,
-        studentEmail: email,
-      });
+const already =
+  await enrollmentCollection.findOne({
+    courseId: new ObjectId(courseId),
+    studentEmail: email,
+  });
 
     if (already) {
       return res.json({
@@ -76,19 +76,19 @@ export const confirmEnrollment = async (
       });
     }
 
-    await enrollmentCollection.insertOne({
-      courseId,
-      studentEmail: email,
-      enrolledAt: new Date(),
-    });
+await enrollmentCollection.insertOne({
+  courseId: new ObjectId(courseId),
+  studentEmail: email,
+  enrolledAt: new Date(),
+});
 
-    await paymentCollection.insertOne({
-      paymentIntentId,
-      courseId,
-      studentEmail: email,
-      amount,
-      paidAt: new Date(),
-    });
+await paymentCollection.insertOne({
+  paymentIntentId,
+  courseId: new ObjectId(courseId),
+  studentEmail: email,
+  amount,
+  paidAt: new Date(),
+});
 
     res.json({
       success: true,
@@ -102,104 +102,135 @@ export const confirmEnrollment = async (
   }
 };
 export const getMyEnrollments = async (
-  req:any,
-  res:Response
-)=>{
+  req: any,
+  res: Response
+) => {
+  try {
 
-  try{
-
-    const email =
-      req.user.email;
-
-
-    const enrollments =
-      await enrollmentCollection
-      .find({
-        studentEmail:email
-      })
-      .toArray();
-
-
+    const email = req.user.email;
 
     const courses =
-      await Promise.all(
-
-        enrollments.map(
-          async(item)=>{
-
-            const course =
-              await courseCollection.findOne({
-                _id:
-                new ObjectId(item.courseId)
-              });
-
-
-            return {
-              ...course,
-              enrolledAt:
-              item.enrolledAt
-            };
-
-          }
-        )
-
-      );
-
-
+      await enrollmentCollection
+        .aggregate([
+          {
+            $match: {
+              studentEmail: email,
+            },
+          },
+          {
+            $lookup: {
+              from: "courses",
+              localField: "courseId",
+              foreignField: "_id",
+              as: "course",
+            },
+          },
+          {
+            $unwind: "$course",
+          },
+          {
+            $replaceRoot: {
+              newRoot: "$course",
+            },
+          },
+        ])
+        .toArray();
 
     res.json({
-
-      success:true,
-
-      data:courses
-
+      success: true,
+      data: courses,
     });
 
+  } catch (error) {
 
-
-  }catch(error){
+    console.log(error);
 
     res.status(500).json({
-
-      success:false
-
+      success: false,
     });
 
   }
-
 };
-export const getMyPayments = async(
- req:any,
- res:Response
-)=>{
+export const getMyPayments = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const email = req.user.email;
 
-try{
+    const payments = await paymentCollection
+      .aggregate([
+        {
+          $match: {
+            studentEmail: email,
+          },
+        },
+        {
+          $lookup: {
+            from: "courses",
+            localField: "courseId",
+            foreignField: "_id",
+            as: "course",
+          },
+        },
+        {
+          $unwind: "$course",
+        },
+        {
+          $project: {
+            _id: 1,
+            paymentIntentId: 1,
+            amount: 1,
+            paidAt: 1,
+            courseTitle: "$course.title",
+          },
+        },
+        {
+          $sort: {
+            paidAt: -1,
+          },
+        },
+      ])
+      .toArray();
 
-const payments =
-await paymentCollection
-.find({
- studentEmail:req.user.email
-})
-.toArray();
+    res.json({
+      success: true,
+      data: payments,
+    });
 
+  } catch (error) {
+    console.log(error);
 
-res.json({
+    res.status(500).json({
+      success: false,
+      message: "Failed to load payment history",
+    });
+  }
+};
+export const checkEnrollment = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const email = req.user.email;
+    const { courseId } = req.params;
 
-success:true,
+const enrollment =
+  await enrollmentCollection.findOne({
+    studentEmail: email,
+    courseId: new ObjectId(courseId),
+  });
 
-data:payments
+    res.json({
+      success: true,
+      enrolled: !!enrollment,
+    });
+  } catch (error) {
+    console.log(error);
 
-});
-
-
-}catch(error){
-
-res.status(500).json({
-
-success:false
-
-});
-
-}
-
+    res.status(500).json({
+      success: false,
+      enrolled: false,
+    });
+  }
 };
