@@ -8,6 +8,7 @@ import {
   getMyEnrollments,
   getMyPayments,
   checkEnrollment,
+  getCourseDetailsForInstructor,
 } from "../controllers/payment.controller";
 
 const router = Router();
@@ -38,6 +39,11 @@ router.get(
 "/my-payments",
 verifyJWT,
 getMyPayments
+);
+router.get(
+  "/course-details/:courseId",
+  verifyJWT,
+  getCourseDetailsForInstructor
 );
 
 export default router;

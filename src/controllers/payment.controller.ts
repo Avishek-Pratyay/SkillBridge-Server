@@ -4,6 +4,7 @@ import {
   courseCollection,
   enrollmentCollection,
   paymentCollection,
+  userCollection,
 } from "../config/db";
 import { ObjectId } from "mongodb";
 
@@ -231,6 +232,79 @@ const enrollment =
     res.status(500).json({
       success: false,
       enrolled: false,
+    });
+  }
+};
+
+export const getCourseDetailsForInstructor = async (
+  req: any,
+  res: Response
+) => {
+  try {
+    const instructorEmail = req.user.email;
+    const { courseId } = req.params;
+
+    // Find the course
+    const course = await courseCollection.findOne({
+      _id: new ObjectId(courseId),
+      createdBy: instructorEmail,
+    });
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    // Get enrollments for this course
+    const enrollments = await enrollmentCollection
+      .find({
+        courseId: new ObjectId(courseId),
+      })
+      .toArray();
+
+    // Get payments for this course
+    const payments = await paymentCollection
+      .find({
+        courseId: new ObjectId(courseId),
+      })
+      .toArray();
+
+    const totalRevenue = payments.reduce(
+      (sum, item) => sum + Number(item.amount),
+      0
+    );
+
+    // Build student list
+    const students = await Promise.all(
+      enrollments.map(async (enrollment: any) => {
+        const user = await userCollection.findOne({
+          email: enrollment.studentEmail,
+        });
+
+        return {
+          name: user?.name || "Unknown Student",
+          email: enrollment.studentEmail,
+        };
+      })
+    );
+
+    res.json({
+      success: true,
+      data: {
+        title: course.title,
+        totalStudents: students.length,
+        totalRevenue,
+        students,
+      },
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load course details",
     });
   }
 };
