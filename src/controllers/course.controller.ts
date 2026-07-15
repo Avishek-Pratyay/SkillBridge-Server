@@ -1,7 +1,10 @@
 import { Request, Response } from "express";
 import { ObjectId } from "mongodb";
-import { courseCollection } from "../config/db";
-
+import {
+  courseCollection,
+  enrollmentCollection,
+  paymentCollection,
+} from "../config/db";
 export const getCourses = async (req: Request, res: Response) => {
   try {
     const {
@@ -175,17 +178,50 @@ export const updateCourse = async (req: any, res: Response) => {
     });
   }
 };
-export const getMyCourses = async (req: any, res: Response) => {
+export const getMyCourses = async (
+  req: any,
+  res: Response
+) => {
   try {
     const email = req.user.email;
 
     const courses = await courseCollection
-      .find({ createdBy: email })
+      .find({
+        createdBy: email,
+      })
       .toArray();
+
+    const updatedCourses = await Promise.all(
+      courses.map(async (course) => {
+        const totalStudents =
+          await enrollmentCollection.countDocuments({
+            courseId: course._id,
+          });
+
+        const payments =
+          await paymentCollection
+            .find({
+              courseId: course._id,
+            })
+            .toArray();
+
+        const totalRevenue = payments.reduce(
+          (sum: number, payment: any) =>
+            sum + Number(payment.amount || 0),
+          0
+        );
+
+        return {
+          ...course,
+          totalStudents,
+          totalRevenue,
+        };
+      })
+    );
 
     res.json({
       success: true,
-      data: courses,
+      data: updatedCourses,
     });
   } catch (error) {
     console.log(error);
