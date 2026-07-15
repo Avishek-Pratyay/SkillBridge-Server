@@ -141,3 +141,70 @@ export const loginUser = async (
     });
   }
 };
+
+export const googleLogin = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const {
+      name,
+      email,
+      photoURL,
+
+    } = req.body;
+
+    let user = await userCollection.findOne({
+      email,
+    });
+
+    if (!user) {
+      const newUser = {
+        name,
+        email,
+        password: "",
+        photoURL: photoURL || "",
+        role: "student",
+        subscription: false,
+        createdAt: new Date(),
+      };
+
+      await userCollection.insertOne(newUser);
+
+      user = newUser;
+    }
+
+    const token = jwt.sign(
+      {
+        email: user.email,
+        role: user.role,
+      },
+      process.env.JWT_SECRET as string,
+      {
+        expiresIn: "7d",
+      }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        photoURL: user.photoURL,
+        subscription: user.subscription ?? false,
+      },
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Google Login Failed",
+    });
+
+  }
+};
