@@ -151,7 +151,6 @@ export const googleLogin = async (
       name,
       email,
       photoURL,
-
     } = req.body;
 
     let user = await userCollection.findOne({
@@ -159,7 +158,7 @@ export const googleLogin = async (
     });
 
     if (!user) {
-      const newUser = {
+      await userCollection.insertOne({
         name,
         email,
         password: "",
@@ -167,11 +166,19 @@ export const googleLogin = async (
         role: "student",
         subscription: false,
         createdAt: new Date(),
-      };
+      });
 
-      await userCollection.insertOne(newUser);
+      // Fetch the inserted user from MongoDB
+      user = await userCollection.findOne({
+        email,
+      });
 
-      user = newUser;
+      if (!user) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to create Google user",
+        });
+      }
     }
 
     const token = jwt.sign(
@@ -198,13 +205,11 @@ export const googleLogin = async (
     });
 
   } catch (error) {
-
     console.log(error);
 
     res.status(500).json({
       success: false,
       message: "Google Login Failed",
     });
-
   }
 };
